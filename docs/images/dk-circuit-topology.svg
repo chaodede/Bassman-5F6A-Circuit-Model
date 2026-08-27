@@ -15,7 +15,7 @@
   </defs>
   <rect width="1500" height="820" rx="22" class="bg"/>
   <text x="45" y="55" class="title">Implemented Nodal DK circuit (12 nodes, 4 nonlinear ports)</text>
-  <text x="45" y="82" class="sub">Derived from the values and node connections in Source/DSP/NodalDKModel.cpp · simplified drawing, exact connectivity</text>
+  <text x="45" y="82" class="sub">Derived from the values and node connections in JUCE/Source/DSP/NodalDKModel.cpp · simplified drawing, exact connectivity</text>
 
   <path d="M45 720H1455" class="wire"/>
   <g class="small"><text x="55" y="748">GROUND / node 0</text></g>

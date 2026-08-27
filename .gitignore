@@ -1,5 +1,7 @@
 # CMake and IDE output
 /build/
+/JUCE/Builds/
+/JUCE/JuceLibraryCode/
 /cmake-build-*/
 /out/
 /.vs/

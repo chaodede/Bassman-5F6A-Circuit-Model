@@ -1,4 +1,4 @@
-# Bassman 5F6-A Circuit Research Plug-in
+# Bassman 5F6-A Circuit Model
 
 JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
 
@@ -38,7 +38,27 @@ Input → 第一前级近似 → Volume/Bright
 
 不包含功率放大级、输出变压器、扬声器、箱体和麦克风模型。
 
+## 工程结构
+
+```text
+JUCE/
+├── Bassman5F6ACircuitModel.jucer  # 用 Projucer 直接打开
+└── Source/                        # 插件入口与电路 DSP
+Tests/
+├── Automated/CircuitTests.cpp     # 自动数值测试
+└── README.md                      # 测试内容与运行方式
+docs/                              # 方法、公式、研究过程与参考资料
+```
+
 ## 构建
+
+### Projucer
+
+打开 [`JUCE/Bassman5F6ACircuitModel.jucer`](JUCE/Bassman5F6ACircuitModel.jucer)，在 Projucer 中执行 **Save Project and Open in IDE**，然后编译 VST3 或 Standalone target。
+
+若 JUCE 不在仓库同级的 `JUCE/` 目录，通过 Projucer 的模块设置选择本机 `JUCE/modules`。
+
+### CMake
 
 要求 CMake 3.22+、C++17 和 JUCE 8。
 
@@ -62,11 +82,12 @@ ctest --test-dir build/core -C Release --output-on-failure
 
 ## 代码入口
 
-- `Source/DSP/AmpCircuit.*`：完整信号链
-- `Source/DSP/NodalDKModel.*`：电路矩阵和 Newton 求解
-- `Source/DSP/TriodeModel.*`：12AX7 模型
-- `Source/PluginProcessor.*`：JUCE、参数和过采样
-- `Tests/CircuitTests.cpp`：核心测试
+- `JUCE/Bassman5F6ACircuitModel.jucer`：Projucer 工程
+- `JUCE/Source/DSP/AmpCircuit.*`：完整信号链
+- `JUCE/Source/DSP/NodalDKModel.*`：电路矩阵和 Newton 求解
+- `JUCE/Source/DSP/TriodeModel.*`：12AX7 模型
+- `JUCE/Source/PluginProcessor.*`：JUCE、参数和过采样
+- `Tests/Automated/CircuitTests.cpp`：自动数值测试
 
 DK Method、三极管方程和非线性求解见[核心算法](docs/research-process.md)，资料来源见[参考资料](docs/references.md)。
 
