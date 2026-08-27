@@ -8,6 +8,16 @@ JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
   <img src="docs/images/target-5f6a-inspired-amp.png" width="520" alt="5F6-A 时代 4x10 tweed 音箱概念图">
 </p>
 
+## 方法适用性
+
+5F6-A 是当前实现案例，不是方法的适用边界。核心流程是：根据电路拓扑生成关联矩阵，将线性网络离散为 DK 状态空间，再逐采样求解非线性器件端口。
+
+| 可复用方法 | 5F6-A 案例配置 |
+| --- | --- |
+| DK 矩阵构建、Newton/伪逆求解、稳态初始化、过采样 | 节点连接、元件值、12AX7 参数和 Tone Stack |
+
+替换拓扑、元件参数和非线性器件模型后，同一方法可用于其他电子管音箱前级、失真电路和模拟效果器。
+
 ## 实现范围
 
 ```text
@@ -25,8 +35,8 @@ Input → 第一前级近似 → Volume/Bright
 要求 CMake 3.22+、C++17 和 JUCE 8。
 
 ```powershell
-git clone https://github.com/chaodede/bassman-5f6a-circuit-model.git
-cd bassman-5f6a-circuit-model
+git clone https://github.com/chaodede/Bassman-5F6A-Circuit-Model.git
+cd Bassman-5F6A-Circuit-Model
 cmake -S . -B build -DJUCE_SOURCE_DIR="D:/path/to/JUCE"
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
