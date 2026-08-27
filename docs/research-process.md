@@ -1,49 +1,162 @@
-# 研究记录
+# 建模与核心算法
 
-## 1. 原始目标
+## 1. 模型结构
 
-研究对象是 5F6-A 风格前级。原始资料包括原理图、SPICE、MATLAB Nodal DK、离线 C++ 和早期 JUCE 工程。
-
-目标是把电路模型放进实时插件，同时保留 Volume、Bright、Treble、Bass、Middle 与元件参数的对应关系。
-
-## 2. 建模过程
-
-1. 根据原理图确定节点、元件值和 12AX7 连接。
-2. 使用 MATLAB/Nodal DK 原型从电路拓扑生成状态空间矩阵。
-3. 使用 Online Circuit Solver 辅助检查 RC、Volume/Bright 和音调网络的线性公式。
-4. 使用 LiveSPICE 的 Bassman 示例和实时仿真思路作对照。
-5. 将模型拆为第一前级近似、Volume/Bright IIR、两只 12AX7 与音调网络。
-6. 将离线 C++ 求解器移植到 JUCE，加入过采样和插件参数。
+```text
+Input → 第一前级近似 → Volume/Bright IIR
+      → 两只 12AX7 + Treble/Bass/Middle DK 网络
+      → 4× oversampling → Output
+```
 
 ![当前 C++ 实现的 Nodal DK 电路](images/dk-circuit-topology.svg)
 
-## 3. 当前求解方式
+线性 RC 关系可用 [Online Circuit Solver](https://onlinecircuitsolver.com/) 辅助计算；[LiveSPICE](https://www.livespice.org/) 用于参考和比较实时电路仿真。完整理论来源见[参考资料](references.md)。
 
-- 第一前级：工作区线性近似。
-- Volume/Bright：由连续域 RC 关系离散得到 IIR。
-- 两只 12AX7 与音调网络：12 节点 Nodal DK 系统。
-- 非线性：每采样点 Newton 迭代，内部解 4×4 线性系统。
-- 抗混叠：整个电路在 4 倍采样率运行。
+## 2. DK Method
 
-对应代码：
+DK Method 将电路拆成线性网络和非线性端口。电阻、电容和电压源只需在采样率或元件值改变时生成矩阵；每个采样点只求电子管端口构成的小型非线性系统。
 
-```text
-AmpCircuit       信号链
-VolumeBrightFilter
-NodalDKModel     电路矩阵、状态和 Newton
-TriodeModel      12AX7 电流及雅可比
-```
+令 `N_r`、`N_x`、`N_u`、`N_o`、`N_n` 分别为电阻、电容、输入、输出和非线性端口的关联矩阵。电阻电导和梯形积分后的电容伴随电导为
 
-## 4. 整理旧工程时做的修正
+$$
+G_r=\mathrm{diag}\left(\frac{1}{R_i}\right),
+\qquad
+G_x=\mathrm{diag}\left(\frac{2C_i}{T}\right),
+$$
 
-- 修正三极管解析雅可比；
-- 用带主元的线性求解替代逐次 SVD 伪逆；
-- 增加 Newton 阻尼和有限值保护；
-- 去掉音频路径中的动态分配；
-- 增加双声道状态、参数保存、Dry/Wet 和自动测试。
+其中 `T=1/f_s`。加入理想电压源约束后，扩展节点矩阵为
 
-卷积和 GRU 曾用于替代非线性求解，但声音和泛化不理想，当前版本不包含该分支。
+$$
+S=
+\begin{bmatrix}
+N_r^T G_r N_r+N_x^T G_x N_x & N_u^T\\
+N_u & 0
+\end{bmatrix}.
+$$
 
-## 5. 限制
+把关联矩阵补到与 `S` 相同的列数后，记为 `N_xp`、`N_op`、`N_np`，输入选择矩阵记为 `N_up`。离散系统写成
 
-当前模型没有实现功放、输出变压器、扬声器和箱体，也没有完成与实机的系统测量校准。下一步应使用同一输入与 LiveSPICE、SPICE 或实机测试点比较扫频、谐波和瞬态。
+$$
+\begin{aligned}
+x_{n+1}&=Ax_n+Bu_n+Ci_n,\\
+y_n&=Dx_n+Eu_n+Fi_n,\\
+v_n&=Gx_n+Hu_n+Ki_n.
+\end{aligned}
+$$
+
+代码中的九个矩阵由 `S^{-1}` 直接构造：
+
+$$
+\begin{aligned}
+A&=2G_xN_{xp}S^{-1}N_{xp}^T-I,&
+B&=2G_xN_{xp}S^{-1}N_{up},\\
+C&=2G_xN_{xp}S^{-1}N_{np}^T,&
+D&=N_{op}S^{-1}N_{xp}^T,\\
+E&=N_{op}S^{-1}N_{up},&
+F&=N_{op}S^{-1}N_{np}^T,\\
+G&=N_{np}S^{-1}N_{xp}^T,&
+H&=N_{np}S^{-1}N_{up},\\
+K&=N_{np}S^{-1}N_{np}^T.
+\end{aligned}
+$$
+
+`x` 是三个电容的状态，`u` 是音频输入和 325 V 电源，`v/i` 是两只三极管的四组非线性端口电压与电流。
+
+## 3. 12AX7 非线性方程
+
+为了让电流曲线连续且可求导，使用 softplus 函数
+
+$$
+L_C(q)=\frac{\log(1+e^{Cq})}{C}.
+$$
+
+栅极电流、阴极总电流和板极端口电流为
+
+$$
+\begin{aligned}
+I_g&=-G_gL_{C_g}(V_{gk})^\xi,\\
+I_k&=-G_pL_{C_p}\left(\frac{V_{pk}}{\mu}+V_{gk}\right)^\gamma,\\
+I_p&=I_k-I_g.
+\end{aligned}
+$$
+
+当前参数为：`G_g=606 µS`、`ξ=1.354`、`C_g=13.9`、`G_p=2.14 mS`、`γ=1.303`、`C_p=3.04`、`μ=100.8`。
+
+softplus 的导数是 logistic 函数：
+
+$$
+\frac{dL_C(q)}{dq}=\frac{1}{1+e^{-Cq}}.
+$$
+
+因此可以解析得到每只三极管的 2×2 电流雅可比
+
+$$
+J_i=
+\begin{bmatrix}
+\partial I_g/\partial V_{gk} & 0\\
+\partial I_p/\partial V_{gk} & \partial I_p/\partial V_{pk}
+\end{bmatrix}.
+$$
+
+解析雅可比避免在每个采样点用有限差分重复计算电流；测试中再用中心有限差分验证它。
+
+## 4. Newton 与伪逆
+
+对当前状态和输入先计算
+
+$$
+P=Gx_n+Hu_n.
+$$
+
+非线性端口必须满足
+
+$$
+r(v)=P+Ki(v)-v=0,
+\qquad
+J_r(v)=KJ_i(v)-I.
+$$
+
+Newton 迭代先求步长，再更新端口电压：
+
+$$
+J_r\Delta v=r,
+\qquad
+v_{k+1}=v_k-\lambda\Delta v.
+$$
+
+其中阻尼 `λ` 从 1 开始；残差未下降时不断减半。
+
+若使用 SVD 伪逆，先分解
+
+$$
+J_r=U\Sigma V^T,
+$$
+
+再对大于阈值的奇异值取倒数：
+
+$$
+J_r^+=V\Sigma^+U^T,
+\qquad
+\Delta v=J_r^+r.
+$$
+
+$$
+\left(\Sigma^+\right)_{ii}=
+\begin{cases}
+1/\sigma_i,&\sigma_i>\tau,\\
+0,&\sigma_i\le\tau,
+\end{cases}
+\qquad
+\tau=\epsilon\,\max(m,n)\,\sigma_{\max}.
+$$
+
+伪逆能为奇异、病态或非方阵系统给出最小二乘步长，但逐采样 SVD 成本较高。当前系统固定为通常可逆的 4×4 方阵，因此代码使用带部分主元的高斯消元直接解 `J_r Δv=r`；矩阵接近奇异时停止本次迭代，而不是在实时路径计算 SVD。
+
+## 5. 代码对应
+
+- `NodalDKModel::buildMatrices()`：构造 `S` 和 `A…K`。
+- `TriodeModel::evaluate()`：计算 `i(v)` 和 `J_i(v)`。
+- `NodalDKModel::solveNonlinear()`：残差、Newton、阻尼线搜索。
+- `math::solve()`（`LinearAlgebra.h`）：带部分主元的高斯消元。
+
+当前模型不包含功率放大级、输出变压器、扬声器和箱体，也尚未完成实机测量校准。

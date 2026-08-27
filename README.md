@@ -2,7 +2,7 @@
 
 JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
 
-这是一个从旧 MATLAB/C++ 研究代码整理而来的 JUCE 插件，用电路方程模拟前级，而不是用神经网络拟合输入输出。
+这是一个用电路方程模拟 5F6-A 风格前级的 JUCE 插件，不使用神经网络拟合输入输出。
 
 ![5F6-A 时代 4x10 tweed 音箱概念图](docs/images/target-5f6a-inspired-amp.png)
 
@@ -48,6 +48,6 @@ ctest --test-dir build/core -C Release --output-on-failure
 - `Source/PluginProcessor.*`：JUCE、参数和过采样
 - `Tests/CircuitTests.cpp`：核心测试
 
-研究整理见[研究记录](docs/research-process.md)，资料来源见[参考资料](docs/references.md)。
+DK Method、三极管方程和非线性求解见[核心算法](docs/research-process.md)，资料来源见[参考资料](docs/references.md)。
 
 代码使用 [AGPL-3.0-or-later](LICENSE)。本项目与 Fender 及所引用的软件项目无关联。
