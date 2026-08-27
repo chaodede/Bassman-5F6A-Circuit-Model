@@ -102,7 +102,7 @@ $$
 
 解析雅可比避免在每个采样点用有限差分重复计算电流；测试中再用中心有限差分验证它。
 
-## 4. Newton 与伪逆
+## 4. Newton、QR 与伪逆
 
 对当前状态和输入先计算
 
@@ -128,6 +128,18 @@ $$
 
 其中阻尼 `λ` 从 1 开始；残差未下降时不断减半。
 
+实时实现先用带部分主元的高斯消元求这个 4×4 方阵。若主元保护判定求解失败，则回退到[列主元 Householder QR](https://github.com/chaodede/solving-least-squares-with-QR)：
+
+$$
+J_r\Pi=QR,
+\qquad
+Rz=Q^Tr,
+\qquad
+\Delta v=\Pi z.
+$$
+
+QR 回退使用固定大小数组，不在音频线程分配内存。它对应旧研究工程中的 `QRColumnPivot::leastSquaresProblem()`；正常输入下通常不触发，因此不增加逐采样的常规计算量。
+
 若使用 SVD 伪逆，先分解
 
 $$
@@ -152,7 +164,7 @@ $$
 \tau=\epsilon\,\max(m,n)\,\sigma_{\max}.
 $$
 
-伪逆能为奇异、病态或非方阵系统给出最小二乘步长，但逐采样 SVD 成本较高。当前系统固定为通常可逆的 4×4 方阵，因此代码使用带部分主元的高斯消元直接解 `J_r Δv=r`；矩阵接近奇异时停止本次迭代，而不是在实时路径计算 SVD。
+SVD 伪逆能为奇异、病态或非方阵系统给出 Moore–Penrose 最小二乘步长，但逐采样成本较高。当前系统是通常满秩的 4×4 方阵，因此代码采用“部分主元高斯快速路径 + 列主元 QR 回退”。这里的 QR 负责满秩最小二乘求解，不等同于对任意秩亏矩阵计算完整的 Moore–Penrose 伪逆。
 
 ## 5. 代码对应
 
@@ -160,5 +172,6 @@ $$
 - `TriodeModel::evaluate()`：计算 `i(v)` 和 `J_i(v)`。
 - `NodalDKModel::solveNonlinear()`：残差、Newton、阻尼线搜索。
 - `math::solve()`（`LinearAlgebra.h`）：带部分主元的高斯消元。
+- `math::solveLeastSquaresQr()`（`LinearAlgebra.h`）：列主元 Householder QR 回退。
 
 当前模型不包含功率放大级、输出变压器、扬声器和箱体，也尚未完成实机测量校准。

@@ -12,10 +12,14 @@ void VolumeBrightFilter::prepare(double newSampleRate) noexcept
     reset();
 }
 
-void VolumeBrightFilter::reset() noexcept
+void VolumeBrightFilter::reset(double steadyInput) noexcept
 {
-    normalX1 = normalY1 = 0.0;
-    brightX = {};
+    // The coupling capacitor blocks DC. Initialising the input histories to
+    // the preceding triode's quiescent plate voltage avoids treating startup
+    // as an artificial plate-voltage step.
+    normalX1 = steadyInput;
+    normalY1 = 0.0;
+    brightX = { steadyInput, steadyInput };
     brightY = {};
 }
 

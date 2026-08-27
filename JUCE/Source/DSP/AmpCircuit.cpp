@@ -6,12 +6,13 @@ namespace bassman
 bool AmpCircuit::prepare(double sampleRate) noexcept
 {
     volumeBright.prepare(sampleRate);
+    volumeBright.reset(firstStageQuiescentVoltage);
     return nonlinearToneStack.prepare(sampleRate);
 }
 
 void AmpCircuit::reset() noexcept
 {
-    volumeBright.reset();
+    volumeBright.reset(firstStageQuiescentVoltage);
     nonlinearToneStack.reset();
 }
 
@@ -33,7 +34,8 @@ bool AmpCircuit::setToneControls(double treble, double bass, double middle) noex
 float AmpCircuit::processSample(float input) noexcept
 {
     // The original study fitted the first 12AX7 stage over the intended input range.
-    const auto firstStagePlateVoltage = -59.6f * input + 168.5f;
+    const auto firstStagePlateVoltage = firstStageGain * input
+        + firstStageQuiescentVoltage;
     const auto coupledSignal = volumeBright.processSample(firstStagePlateVoltage);
     return nonlinearToneStack.processSample(coupledSignal);
 }

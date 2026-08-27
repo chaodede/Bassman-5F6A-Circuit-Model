@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 #include "DSP/AmpCircuit.h"
+#include "DSP/LinearAlgebra.h"
 #include "DSP/TriodeModel.h"
 #include "DSP/VolumeBrightFilter.h"
 
@@ -56,6 +57,43 @@ void testTriodeJacobian()
     }
 }
 
+void testColumnPivotedQr()
+{
+    const bassman::math::Matrix<4, 4> matrix {{
+        {{ 1.0e-4, 2.0, -1.0, 0.5 }},
+        {{ 2.0e-4, -1.0, 3.0, 1.0 }},
+        {{ -1.0e-4, 0.5, 2.0, -2.0 }},
+        {{ 3.0e-4, 1.0, 0.25, 4.0 }}
+    }};
+    const bassman::math::Vector<4> expected {{ 2.0, -1.0, 0.5, 3.0 }};
+    const auto rhs = bassman::math::multiply(matrix, expected);
+
+    bassman::math::Vector<4> qrSolution {};
+    expect(bassman::math::solveLeastSquaresQr(matrix, rhs, qrSolution),
+           "column-pivoted Householder QR must solve a full-rank system");
+    for (std::size_t i = 0; i < expected.size(); ++i)
+        expect(std::abs(qrSolution[i] - expected[i]) < 1.0e-9,
+               "QR solution must recover the known vector");
+
+    const auto reconstructed = bassman::math::multiply(matrix, qrSolution);
+    for (std::size_t i = 0; i < rhs.size(); ++i)
+        expect(std::abs(reconstructed[i] - rhs[i]) < 1.0e-11,
+               "QR solution residual must be near machine precision");
+
+    auto nearRankDeficient = bassman::math::identity<4>();
+    nearRankDeficient[3][3] = 1.0e-14;
+    const bassman::math::Vector<4> nearRankRhs {{ 1.0, 2.0, 3.0, 4.0e-14 }};
+    bassman::math::Vector<4> gaussianSolution {};
+    bassman::math::Vector<4> recoveredSolution {};
+    expect(!bassman::math::solve(nearRankDeficient, nearRankRhs, gaussianSolution),
+           "Gaussian pivot guard must reject the near-rank-deficient test matrix");
+    expect(bassman::math::solveLeastSquaresQr(
+               nearRankDeficient, nearRankRhs, recoveredSolution),
+           "column-pivoted QR must recover a full-rank solve rejected by the fast path");
+    expect(std::abs(recoveredSolution[3] - 4.0) < 1.0e-9,
+           "QR fallback must recover the small-pivot component");
+}
+
 void testVolumeBrightFilter()
 {
     bassman::VolumeBrightFilter filter;
@@ -93,6 +131,27 @@ void testAmpCircuit()
     expect(energy > 1.0e-8, "amp must produce a non-silent signal");
     expect(stats.samples == 24000, "solver sample counter must be exact");
     expect(stats.failedSamples < 24, "fewer than 0.1% of nominal samples may fail Newton convergence");
+    std::cout << "Nominal solve: failed=" << stats.failedSamples
+              << ", QR fallbacks=" << stats.qrFallbacks << '\n';
+}
+
+void testStartupSteadyState()
+{
+    bassman::AmpCircuit circuit;
+    expect(circuit.prepare(192000.0), "startup circuit must prepare");
+
+    double maximumOutput = 0.0;
+    for (int sample = 0; sample < 4096; ++sample)
+        maximumOutput = std::max(maximumOutput,
+                                 std::abs(static_cast<double>(circuit.processSample(0.0f))));
+
+    const auto& stats = circuit.getSolverStats();
+    std::cout << "Startup silence: max=" << maximumOutput
+              << ", failed Newton samples=" << stats.failedSamples << '\n';
+    expect(maximumOutput < 1.0e-6,
+           "zero-input startup must begin at the circuit DC steady state");
+    expect(stats.failedSamples == 0,
+           "zero-input startup must not contain failed Newton samples");
 }
 
 void testToneExtremes()
@@ -128,8 +187,10 @@ void testToneExtremes()
 int main()
 {
     testTriodeJacobian();
+    testColumnPivotedQr();
     testVolumeBrightFilter();
     testAmpCircuit();
+    testStartupSteadyState();
     testToneExtremes();
 
     if (failures != 0)

@@ -16,3 +16,8 @@ They remain subject to their own licences and copyright notices.
 docs/images/livespice-bassman-preamp.png is an attributed screenshot of the
 Fender Bassman 5F6-A preamp example published at https://www.livespice.org/.
 LiveSPICE is Copyright Dillon Sharlet and distributed under the MIT License.
+
+The allocation-free column-pivoted Householder QR fallback is based on the
+method documented in https://github.com/chaodede/solving-least-squares-with-QR,
+Copyright (c) 2025 laochaode and made available under the MIT License. See
+THIRD_PARTY_NOTICES.md.

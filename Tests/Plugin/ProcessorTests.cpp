@@ -44,11 +44,22 @@ int main()
     processor.setPlayConfigDetails(2, 2, sampleRate, preparedBlockSize);
     processor.prepareToPlay(sampleRate, preparedBlockSize);
 
+    juce::AudioBuffer<float> startupSilence(2, 4096);
+    startupSilence.clear();
+    juce::MidiBuffer midi;
+    processor.processBlock(startupSilence, midi);
+    for (int channel = 0; channel < startupSilence.getNumChannels(); ++channel)
+        for (int sample = 0; sample < startupSilence.getNumSamples(); ++sample)
+            if (std::abs(startupSilence.getSample(channel, sample)) >= 1.0e-6f)
+            {
+                std::cerr << "FAIL: zero-input startup contains a transient\n";
+                return EXIT_FAILURE;
+            }
+
     // Audition and other offline hosts may send a block larger than the size
     // supplied to prepareToPlay. It must be chunked without silence or overflow.
     juce::AudioBuffer<float> offlineBlock(2, 4096);
     fillSignal(offlineBlock, sampleRate);
-    juce::MidiBuffer midi;
     processor.processBlock(offlineBlock, midi);
     if (!isFiniteAndNonSilent(offlineBlock))
     {

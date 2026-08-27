@@ -27,6 +27,18 @@ void stampIncidence(math::Matrix<Branches, Nodes>& incidence,
     if (negativeNode > 0)
         incidence[branch][static_cast<std::size_t>(negativeNode - 1)] = -1.0;
 }
+
+#if defined(_MSC_VER)
+__declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+bool solveQrFallback(const math::Matrix<4, 4>& matrix,
+                     const math::Vector<4>& rhs,
+                     math::Vector<4>& result) noexcept
+{
+    return math::solveLeastSquaresQr(matrix, rhs, result);
+}
 } // namespace
 
 bool NodalDKModel::prepare(double newSampleRate) noexcept
@@ -258,7 +270,17 @@ bool NodalDKModel::solveNonlinear(
             jacobian[i][i] -= 1.0;
 
         NonlinearVector newtonStep {};
-        if (!math::solve(jacobian, error, newtonStep))
+        auto stepSolved = math::solve(jacobian, error, newtonStep);
+
+        // Preserve the real-time Gaussian fast path, but recover with the
+        // column-pivoted Householder QR method from the original research when
+        // a poorly conditioned Jacobian defeats that solve.
+        if (!stepSolved)
+        {
+            ++stats.qrFallbacks;
+            stepSolved = solveQrFallback(jacobian, error, newtonStep);
+        }
+        if (!stepSolved)
             break;
 
         auto accepted = false;

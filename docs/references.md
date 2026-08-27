@@ -6,6 +6,7 @@
 - [Online Circuit Solver](https://onlinecircuitsolver.com/)：MNA、拉普拉斯传递函数和线性电路公式检查。
 - [NodalDKFramework](https://github.com/jardamacak/NodalDKFramework)：MATLAB Nodal DK 研究框架。
 - [dkmethod](https://github.com/joaorossi/dkmethod)：JUCE Nodal DK 示例实现。
+- [solving-least-squares-with-QR](https://github.com/chaodede/solving-least-squares-with-QR)：列主元 Householder QR、最小二乘与方阵逆；本项目 Newton 线性求解的 QR 回退来源。
 
 ## 核心论文
 

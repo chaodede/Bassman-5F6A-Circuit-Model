@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Bassman5F6ACircuitModel VERSION 1.0.1 LANGUAGES CXX)
+project(Bassman5F6ACircuitModel VERSION 1.0.2 LANGUAGES CXX)
 
 option(BASSMAN_BUILD_PLUGIN "Build the JUCE plug-in and standalone app" ON)
 option(BASSMAN_BUILD_TESTS "Build the circuit-model tests" ON)

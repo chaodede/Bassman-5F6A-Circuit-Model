@@ -22,7 +22,7 @@ JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
 
 | 可复用方法 | 5F6-A 案例配置 |
 | --- | --- |
-| DK 矩阵构建、Newton/伪逆求解、稳态初始化、过采样 | 节点连接、元件值、12AX7 参数和 Tone Stack |
+| DK 矩阵构建、Newton/列主元 QR 回退、稳态初始化、过采样 | 节点连接、元件值、12AX7 参数和 Tone Stack |
 
 替换拓扑、元件参数和非线性器件模型后，同一方法可用于其他电子管音箱前级、失真电路和模拟效果器。
 

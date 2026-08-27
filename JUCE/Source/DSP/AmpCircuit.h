@@ -18,6 +18,9 @@ public:
     [[nodiscard]] const NodalDKModel::SolverStats& getSolverStats() const noexcept;
 
 private:
+    static constexpr float firstStageGain = -59.6f;
+    static constexpr float firstStageQuiescentVoltage = 168.5f;
+
     VolumeBrightFilter volumeBright;
     NodalDKModel nonlinearToneStack;
 };

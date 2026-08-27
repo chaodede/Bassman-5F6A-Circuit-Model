@@ -18,6 +18,7 @@ public:
         std::uint64_t samples = 0;
         std::uint64_t failedSamples = 0;
         std::uint64_t totalIterations = 0;
+        std::uint64_t qrFallbacks = 0;
         int lastIterations = 0;
         double lastResidual = 0.0;
         bool lastConverged = true;

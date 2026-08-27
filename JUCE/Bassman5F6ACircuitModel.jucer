@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="Bm5ADK" name="Bassman5F6ACircuitModel" projectType="audioplug"
               useAppConfig="0" addUsingNamespaceToJuceHeader="0" displaySplashScreen="1"
-              jucerFormatVersion="1" projectVersion="1.0.1"
+              jucerFormatVersion="1" projectVersion="1.0.2"
               companyName="Circuit Sim Research"
               companyWebsite="https://github.com/chaodede/Bassman-5F6A-Circuit-Model"
               pluginName="Bassman 5F6-A Circuit Model"

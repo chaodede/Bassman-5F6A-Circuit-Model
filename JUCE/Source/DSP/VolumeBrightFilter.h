@@ -9,7 +9,7 @@ class VolumeBrightFilter
 {
 public:
     void prepare(double newSampleRate) noexcept;
-    void reset() noexcept;
+    void reset(double steadyInput = 0.0) noexcept;
     void setVolume(double newVolume) noexcept;
     void setBright(bool shouldBeBright) noexcept { bright = shouldBeBright; }
     [[nodiscard]] float processSample(float input) noexcept;
