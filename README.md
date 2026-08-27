@@ -2,9 +2,11 @@
 
 JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
 
-这是一个用电路方程模拟 5F6-A 风格前级的 JUCE 插件，不使用神经网络拟合输入输出。
+这是一个用电路方程模拟 5F6-A 风格前级的 JUCE 插件。
 
-![5F6-A 时代 4x10 tweed 音箱概念图](docs/images/target-5f6a-inspired-amp.png)
+<p align="center">
+  <img src="docs/images/target-5f6a-inspired-amp.png" width="520" alt="5F6-A 时代 4x10 tweed 音箱概念图">
+</p>
 
 ## 实现范围
 
@@ -23,8 +25,8 @@ Input → 第一前级近似 → Volume/Bright
 要求 CMake 3.22+、C++17 和 JUCE 8。
 
 ```powershell
-git clone https://github.com/chaodede/simulation-of-guitar-amplifiers.git
-cd simulation-of-guitar-amplifiers
+git clone https://github.com/chaodede/bassman-5f6a-circuit-model.git
+cd bassman-5f6a-circuit-model
 cmake -S . -B build -DJUCE_SOURCE_DIR="D:/path/to/JUCE"
 cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
