@@ -2,7 +2,10 @@
 #include "PluginProcessor.h"
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cmath>
+#include <memory>
 
 namespace parameterId
 {
@@ -15,6 +18,39 @@ constexpr auto middle = "middle";
 constexpr auto mix = "mix";
 constexpr auto output = "output";
 } // namespace parameterId
+
+struct BassmanResearchAudioProcessor::ProcessingState
+{
+    ProcessingState(std::size_t channels,
+                    int requestedMaximumBlockSize,
+                    double sampleRate,
+                    int oversamplingStageCount)
+        : oversampling(channels, static_cast<std::size_t>(oversamplingStageCount),
+                       juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR,
+                       true, true),
+          maximumBlockSize(std::max(1, requestedMaximumBlockSize)),
+          channelCount(std::min(channels, circuits.size()))
+    {
+        oversampling.initProcessing(static_cast<std::size_t>(maximumBlockSize));
+        oversampling.reset();
+
+        const auto factor = static_cast<int>(oversampling.getOversamplingFactor());
+        dry.setSize(static_cast<int>(channelCount), maximumBlockSize * factor,
+                    false, false, true);
+
+        const auto circuitSampleRate = sampleRate * static_cast<double>(factor);
+        ready = true;
+        for (std::size_t channel = 0; channel < channelCount; ++channel)
+            ready = circuits[channel].prepare(circuitSampleRate) && ready;
+    }
+
+    std::array<bassman::AmpCircuit, 2> circuits;
+    juce::dsp::Oversampling<float> oversampling;
+    juce::AudioBuffer<float> dry;
+    int maximumBlockSize;
+    std::size_t channelCount;
+    bool ready = false;
+};
 
 BassmanResearchAudioProcessor::BassmanResearchAudioProcessor()
     : AudioProcessor(BusesProperties()
@@ -59,31 +95,31 @@ BassmanResearchAudioProcessor::createParameterLayout()
 void BassmanResearchAudioProcessor::prepareToPlay(double sampleRate,
                                                   int maximumExpectedSamplesPerBlock)
 {
-    preparedMaximumBlockSize = std::max(1, maximumExpectedSamplesPerBlock);
     const auto channels = static_cast<std::size_t>(getTotalNumOutputChannels());
-    oversampling = std::make_unique<juce::dsp::Oversampling<float>>(
-        channels, oversamplingStages,
-        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR,
-        true, true);
-    oversampling->initProcessing(static_cast<std::size_t>(preparedMaximumBlockSize));
-    oversampling->reset();
-    setLatencySamples(static_cast<int>(std::lround(oversampling->getLatencyInSamples())));
+    auto newState = std::make_shared<ProcessingState>(
+        channels, maximumExpectedSamplesPerBlock, sampleRate, oversamplingStages);
 
-    const auto factor = static_cast<int>(oversampling->getOversamplingFactor());
-    oversampledDry.setSize(static_cast<int>(channels),
-                           preparedMaximumBlockSize * factor,
-                           false, false, true);
+    if (!newState->ready)
+    {
+        std::atomic_store_explicit(&processingState, std::shared_ptr<ProcessingState> {},
+                                   std::memory_order_release);
+        setLatencySamples(0);
+        return;
+    }
 
-    const auto circuitSampleRate = sampleRate * static_cast<double>(factor);
-    for (std::size_t channel = 0; channel < channels && channel < circuits.size(); ++channel)
-        circuits[channel].prepare(circuitSampleRate);
+    setLatencySamples(static_cast<int>(
+        std::lround(newState->oversampling.getLatencyInSamples())));
+    std::atomic_store_explicit(&processingState, std::move(newState),
+                               std::memory_order_release);
 }
 
 void BassmanResearchAudioProcessor::releaseResources()
 {
-    oversampling.reset();
-    oversampledDry.setSize(0, 0);
-    preparedMaximumBlockSize = 0;
+    // A host may finish an offline render while its worker is returning from
+    // processBlock. The worker keeps its own shared snapshot alive until the
+    // current block has completed.
+    std::atomic_store_explicit(&processingState, std::shared_ptr<ProcessingState> {},
+                               std::memory_order_release);
 }
 
 bool BassmanResearchAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -103,7 +139,8 @@ void BassmanResearchAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
     for (auto channel = inputChannels; channel < outputChannels; ++channel)
         buffer.clear(channel, 0, buffer.getNumSamples());
 
-    if (oversampling == nullptr || buffer.getNumSamples() > preparedMaximumBlockSize)
+    auto state = std::atomic_load_explicit(&processingState, std::memory_order_acquire);
+    if (state == nullptr)
     {
         buffer.clear();
         return;
@@ -121,32 +158,43 @@ void BassmanResearchAudioProcessor::processBlock(juce::AudioBuffer<float>& buffe
         parameters.getRawParameterValue(parameterId::output)->load());
 
     const auto channelCount = std::min<std::size_t>(
-        static_cast<std::size_t>(buffer.getNumChannels()), circuits.size());
+        static_cast<std::size_t>(buffer.getNumChannels()), state->channelCount);
     for (std::size_t channel = 0; channel < channelCount; ++channel)
     {
-        circuits[channel].setBright(bright);
-        circuits[channel].setVolume(volume);
-        circuits[channel].setToneControls(treble, bass, middle);
+        state->circuits[channel].setBright(bright);
+        state->circuits[channel].setVolume(volume);
+        state->circuits[channel].setToneControls(treble, bass, middle);
     }
 
-    juce::dsp::AudioBlock<float> baseBlock(buffer);
-    auto upsampled = oversampling->processSamplesUp(baseBlock);
-    const auto upsampledSamples = static_cast<int>(upsampled.getNumSamples());
-
-    for (std::size_t channel = 0; channel < channelCount; ++channel)
+    // Some offline hosts provide blocks larger than the maximum reported to
+    // prepareToPlay. Process them as bounded chunks instead of clearing the
+    // block or overrunning JUCE's oversampling buffers.
+    const auto totalSamples = buffer.getNumSamples();
+    for (int offset = 0; offset < totalSamples; offset += state->maximumBlockSize)
     {
-        auto* wet = upsampled.getChannelPointer(channel);
-        auto* dry = oversampledDry.getWritePointer(static_cast<int>(channel));
-        std::copy_n(wet, upsampledSamples, dry);
+        const auto blockSamples = std::min(state->maximumBlockSize, totalSamples - offset);
+        auto baseBlock = juce::dsp::AudioBlock<float>(buffer).getSubBlock(
+            static_cast<std::size_t>(offset), static_cast<std::size_t>(blockSamples));
+        auto upsampled = state->oversampling.processSamplesUp(baseBlock);
+        const auto upsampledSamples = static_cast<int>(upsampled.getNumSamples());
 
-        for (int sample = 0; sample < upsampledSamples; ++sample)
+        for (std::size_t channel = 0; channel < channelCount; ++channel)
         {
-            const auto processed = circuits[channel].processSample(dry[sample] * inputGain);
-            wet[sample] = dry[sample] + mix * (processed - dry[sample]);
+            auto* wet = upsampled.getChannelPointer(channel);
+            auto* dry = state->dry.getWritePointer(static_cast<int>(channel));
+            std::copy_n(wet, upsampledSamples, dry);
+
+            for (int sample = 0; sample < upsampledSamples; ++sample)
+            {
+                const auto processed = state->circuits[channel].processSample(
+                    dry[sample] * inputGain);
+                wet[sample] = dry[sample] + mix * (processed - dry[sample]);
+            }
         }
+
+        state->oversampling.processSamplesDown(baseBlock);
     }
 
-    oversampling->processSamplesDown(baseBlock);
     buffer.applyGain(outputGain);
 }
 

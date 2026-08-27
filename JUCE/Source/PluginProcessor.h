@@ -5,7 +5,6 @@
 
 #include "DSP/AmpCircuit.h"
 
-#include <array>
 #include <memory>
 
 class BassmanResearchAudioProcessor final : public juce::AudioProcessor
@@ -40,15 +39,17 @@ public:
     juce::AudioProcessorValueTreeState parameters;
 
 private:
+    struct ProcessingState;
+
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
-    static constexpr std::size_t maximumChannels = 2;
-    static constexpr int oversamplingStages = 2; // 2^2 = 4x
+#if JUCE_DEBUG
+    static constexpr int oversamplingStages = 0; // 1x keeps debug builds usable in a DAW.
+#else
+    static constexpr int oversamplingStages = 2; // 2^2 = 4x in release builds.
+#endif
 
-    std::array<bassman::AmpCircuit, maximumChannels> circuits;
-    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
-    juce::AudioBuffer<float> oversampledDry;
-    int preparedMaximumBlockSize = 0;
+    std::shared_ptr<ProcessingState> processingState;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BassmanResearchAudioProcessor)
 };

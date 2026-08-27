@@ -46,6 +46,7 @@ JUCE/
 └── Source/                        # 插件入口与电路 DSP
 Tests/
 ├── Automated/CircuitTests.cpp     # 自动数值测试
+├── Plugin/ProcessorTests.cpp      # 离线块与资源生命周期测试
 └── README.md                      # 测试内容与运行方式
 docs/                              # 方法、公式、研究过程与参考资料
 ```
@@ -55,6 +56,8 @@ docs/                              # 方法、公式、研究过程与参考资�
 ### Projucer
 
 打开 [`JUCE/Bassman5F6ACircuitModel.jucer`](JUCE/Bassman5F6ACircuitModel.jucer)，在 Projucer 中执行 **Save Project and Open in IDE**，然后编译 VST3 或 Standalone target。
+
+在 Visual Studio 中请选择 **Release | x64** 后再生成并安装插件。Debug 版本只使用 1× 采样供调试；Release 版本使用 4× 过采样。不要把 Debug 版本作为 DAW 中的日常插件。
 
 若 JUCE 不在仓库同级的 `JUCE/` 目录，通过 Projucer 的模块设置选择本机 `JUCE/modules`。
 

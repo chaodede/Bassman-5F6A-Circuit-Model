@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Bassman5F6ACircuitModel VERSION 1.0.0 LANGUAGES CXX)
+project(Bassman5F6ACircuitModel VERSION 1.0.1 LANGUAGES CXX)
 
 option(BASSMAN_BUILD_PLUGIN "Build the JUCE plug-in and standalone app" ON)
 option(BASSMAN_BUILD_TESTS "Build the circuit-model tests" ON)
@@ -87,4 +87,16 @@ if(BASSMAN_BUILD_TESTS)
     add_executable(BassmanCircuitTests Tests/Automated/CircuitTests.cpp)
     target_link_libraries(BassmanCircuitTests PRIVATE BassmanCircuit)
     add_test(NAME BassmanCircuitTests COMMAND BassmanCircuitTests)
+
+    if(BASSMAN_BUILD_PLUGIN)
+        add_executable(BassmanPluginTests Tests/Plugin/ProcessorTests.cpp)
+        target_include_directories(BassmanPluginTests PRIVATE
+            JUCE/Source
+            "${CMAKE_CURRENT_BINARY_DIR}/Bassman5F6ACircuitModel_artefacts/JuceLibraryCode")
+        target_link_libraries(BassmanPluginTests PRIVATE
+            Bassman5F6ACircuitModel
+            juce::juce_audio_utils
+            juce::juce_dsp)
+        add_test(NAME BassmanPluginTests COMMAND BassmanPluginTests)
+    endif()
 endif()
