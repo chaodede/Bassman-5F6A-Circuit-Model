@@ -1,0 +1,32 @@
+# CMake and IDE output
+/build/
+/cmake-build-*/
+/out/
+/.vs/
+/.vscode/
+/.idea/
+CMakeUserPresets.json
+*.sln
+*.vcxproj*
+*.xcodeproj/
+
+# Compiled products and caches
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.vst3
+*.component
+*.a
+*.lib
+*.dSYM/
+*.cache
+*.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*~
+*.swp

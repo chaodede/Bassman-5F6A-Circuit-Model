@@ -1,0 +1,20 @@
+name: circuit-core-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-core:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DBASSMAN_BUILD_PLUGIN=OFF -DBASSMAN_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
