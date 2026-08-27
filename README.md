@@ -8,6 +8,14 @@ JUCE VST3/Standalone plugin for a circuit-based 5F6-A-style guitar preamp model.
   <img src="docs/images/target-5f6a-inspired-amp.png" width="520" alt="5F6-A 时代 4x10 tweed 音箱概念图">
 </p>
 
+## LiveSPICE 参考电路
+
+<p align="center">
+  <img src="docs/images/livespice-bassman-preamp.png" width="760" alt="LiveSPICE 中的 Fender Bassman 5F6-A 前级和音调网络">
+</p>
+
+<p align="center"><sub>来源：<a href="https://www.livespice.org/">LiveSPICE 官方 Bassman 5F6-A preamp 示例</a>。该图用于对照电路范围，不是本项目界面截图。</sub></p>
+
 ## 方法适用性
 
 5F6-A 是当前实现案例，不是方法的适用边界。核心流程是：根据电路拓扑生成关联矩阵，将线性网络离散为 DK 状态空间，再逐采样求解非线性器件端口。

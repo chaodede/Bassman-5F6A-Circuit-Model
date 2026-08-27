@@ -12,3 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.
 
 JUCE and referenced research papers are not part of this repository.
 They remain subject to their own licences and copyright notices.
+
+docs/images/livespice-bassman-preamp.png is an attributed screenshot of the
+Fender Bassman 5F6-A preamp example published at https://www.livespice.org/.
+LiveSPICE is Copyright Dillon Sharlet and distributed under the MIT License.
