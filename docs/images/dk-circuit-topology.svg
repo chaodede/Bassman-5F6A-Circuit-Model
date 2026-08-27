@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="820" viewBox="0 0 1500 820" role="img" aria-labelledby="title desc">
+  <title id="title">Implemented two-triode Nodal DK circuit topology</title>
+  <desc id="desc">The exact twelve-node topology used by the C++ model: one nonlinear triode gain stage, a cathode follower, three capacitors, ten resistors and the Bassman tone-control network.</desc>
+  <defs>
+    <style>
+      .bg{fill:#fbf8f0}.wire{stroke:#29343b;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+      .rail{stroke:#ad7132;stroke-width:4}.comp{fill:#fff;stroke:#29343b;stroke-width:2.5}.tube{fill:#fff6df;stroke:#ad7132;stroke-width:3}
+      .tone{fill:#eef7f5;stroke:#4f8d84;stroke-width:2.5;stroke-dasharray:9 7}.node{fill:#29343b}.supply{fill:#ad7132}
+      .title{font:700 28px 'Segoe UI',Arial,sans-serif;fill:#222b31}.sub{font:400 15px 'Segoe UI',Arial,sans-serif;fill:#59656d}
+      .label{font:600 14px 'Segoe UI',Arial,sans-serif;fill:#29343b}.small{font:400 12px 'Segoe UI',Arial,sans-serif;fill:#59656d}
+      .nodeText{font:700 12px 'Segoe UI',Arial,sans-serif;fill:#ad7132}.tubeTitle{font:700 18px 'Segoe UI',Arial,sans-serif;fill:#71471f}
+      .tubeText{font:400 13px 'Segoe UI',Arial,sans-serif;fill:#71471f}.toneTitle{font:700 18px 'Segoe UI',Arial,sans-serif;fill:#326b63}
+    </style>
+    <marker id="outArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#4f8d84"/></marker>
+  </defs>
+  <rect width="1500" height="820" rx="22" class="bg"/>
+  <text x="45" y="55" class="title">Implemented Nodal DK circuit (12 nodes, 4 nonlinear ports)</text>
+  <text x="45" y="82" class="sub">Derived from the values and node connections in Source/DSP/NodalDKModel.cpp · simplified drawing, exact connectivity</text>
+
+  <path d="M45 720H1455" class="wire"/>
+  <g class="small"><text x="55" y="748">GROUND / node 0</text></g>
+
+  <!-- input source and grid leak -->
+  <circle cx="105" cy="430" r="38" class="comp"/>
+  <path d="M105 392V350M105 468V720M90 418H120M105 403V433" class="wire"/>
+  <text x="105" y="500" text-anchor="middle" class="label">signal input</text>
+  <text x="105" y="520" text-anchor="middle" class="small">U₁</text>
+  <path d="M105 350H190" class="wire"/>
+  <rect x="190" y="332" width="100" height="36" rx="5" class="comp"/>
+  <text x="240" y="325" text-anchor="middle" class="label">270 kΩ</text>
+  <path d="M290 350H365" class="wire"/>
+  <circle cx="105" cy="350" r="6" class="node"/><text x="90" y="337" class="nodeText">n1</text>
+  <circle cx="365" cy="350" r="6" class="node"/><text x="350" y="337" class="nodeText">n2</text>
+
+  <!-- V2 nonlinear gain triode -->
+  <rect x="365" y="235" width="225" height="255" rx="20" class="tube"/>
+  <text x="477" y="272" text-anchor="middle" class="tubeTitle">V2 · 12AX7</text>
+  <text x="477" y="298" text-anchor="middle" class="tubeText">nonlinear gain stage</text>
+  <text x="390" y="342" class="small">grid n2</text>
+  <text x="500" y="342" class="small">plate n4</text>
+  <text x="435" y="451" class="small">cathode n3</text>
+  <path d="M365 350H410M410 325V375M450 318V382M492 305C540 330 540 370 492 395M492 350H590" class="wire"/>
+  <path d="M450 382V490" class="wire"/>
+  <circle cx="450" cy="490" r="6" class="node"/><text x="430" y="512" class="nodeText">n3</text>
+  <rect x="420" y="545" width="60" height="82" rx="5" class="comp"/>
+  <text x="490" y="585" class="label">820 Ω</text>
+  <path d="M450 490V545M450 627V720" class="wire"/>
+  <circle cx="590" cy="350" r="6" class="node"/><text x="572" y="337" class="nodeText">n4</text>
+
+  <!-- B+ supply and plate load -->
+  <path d="M545 120H850" class="rail"/>
+  <circle cx="850" cy="120" r="7" class="supply"/><text x="865" y="126" class="label">n5 · B+ 325 V</text>
+  <rect x="560" y="150" width="60" height="80" rx="5" class="comp"/>
+  <text x="632" y="192" class="label">100 kΩ</text>
+  <path d="M590 120V150M590 230V350" class="wire"/>
+
+  <!-- cathode follower -->
+  <rect x="650" y="235" width="230" height="255" rx="20" class="tube"/>
+  <text x="765" y="272" text-anchor="middle" class="tubeTitle">V3 · 12AX7</text>
+  <text x="765" y="298" text-anchor="middle" class="tubeText">cathode follower</text>
+  <text x="670" y="342" class="small">grid n4</text>
+  <text x="777" y="320" class="small">plate n5</text>
+  <text x="720" y="451" class="small">cathode n6</text>
+  <path d="M590 350H695M695 325V375M735 318V382M777 305C825 330 825 370 777 395M777 305V120" class="wire"/>
+  <path d="M735 382V500" class="wire"/>
+  <circle cx="735" cy="500" r="6" class="node"/><text x="715" y="522" class="nodeText">n6</text>
+  <rect x="705" y="555" width="60" height="82" rx="5" class="comp"/>
+  <text x="777" y="595" class="label">100 kΩ</text>
+  <path d="M735 500V555M735 637V720" class="wire"/>
+
+  <!-- slope resistor and node 7 -->
+  <path d="M735 500H805" class="wire"/>
+  <rect x="805" y="482" width="92" height="36" rx="5" class="comp"/>
+  <text x="851" y="473" text-anchor="middle" class="label">56 kΩ</text>
+  <path d="M897 500H945" class="wire"/>
+  <circle cx="945" cy="500" r="6" class="node"/><text x="928" y="522" class="nodeText">n7</text>
+
+  <!-- tone stack box -->
+  <rect x="925" y="150" width="530" height="510" rx="22" class="tone"/>
+  <text x="1190" y="187" text-anchor="middle" class="toneTitle">5F6-A tone stack inside the DK network</text>
+
+  <!-- treble cap branch from n6 to n8 to n9 -->
+  <path d="M735 500V225H970" class="wire"/>
+  <path d="M970 205V245M990 205V245" class="wire"/>
+  <text x="980" y="197" text-anchor="middle" class="label">250 pF</text>
+  <path d="M990 225H1040" class="wire"/>
+  <circle cx="1040" cy="225" r="6" class="node"/><text x="1023" y="211" class="nodeText">n8</text>
+  <rect x="1075" y="207" width="120" height="36" rx="5" class="comp"/>
+  <text x="1135" y="198" text-anchor="middle" class="label">(1−T)·250 kΩ</text>
+  <path d="M1040 225H1075M1195 225H1245" class="wire"/>
+  <circle cx="1245" cy="225" r="6" class="node"/><text x="1228" y="211" class="nodeText">n9</text>
+  <path d="M1245 225H1420" stroke="#4f8d84" stroke-width="4" fill="none" marker-end="url(#outArrow)"/>
+  <text x="1340" y="211" text-anchor="middle" class="label">model output</text>
+
+  <!-- treble lower pot to node 10 -->
+  <path d="M1245 225V315" class="wire"/>
+  <rect x="1185" y="315" width="120" height="36" rx="5" class="comp"/>
+  <text x="1320" y="338" class="label">T·250 kΩ</text>
+  <path d="M1245 351V395" class="wire"/>
+  <circle cx="1245" cy="395" r="6" class="node"/><text x="1228" y="382" class="nodeText">n10</text>
+
+  <!-- C2 n7-n10 -->
+  <path d="M945 500V395H1050" class="wire"/>
+  <path d="M1050 375V415M1070 375V415" class="wire"/>
+  <text x="1060" y="367" text-anchor="middle" class="label">20 nF</text>
+  <path d="M1070 395H1245" class="wire"/>
+
+  <!-- Bass resistor n10-n11 -->
+  <path d="M1245 395V440" class="wire"/>
+  <rect x="1185" y="440" width="120" height="36" rx="5" class="comp"/>
+  <text x="1320" y="463" class="label">B·500 kΩ</text>
+  <path d="M1245 476V525" class="wire"/>
+  <circle cx="1245" cy="525" r="6" class="node"/><text x="1226" y="548" class="nodeText">n11</text>
+
+  <!-- C3 n7-n12 -->
+  <path d="M945 500V590H1045" class="wire"/>
+  <path d="M1045 570V610M1065 570V610" class="wire"/>
+  <text x="1055" y="563" text-anchor="middle" class="label">20 nF</text>
+  <path d="M1065 590H1140" class="wire"/>
+  <circle cx="1140" cy="590" r="6" class="node"/><text x="1121" y="613" class="nodeText">n12</text>
+
+  <!-- Middle split n11-n12-ground -->
+  <path d="M1245 525H1205" class="wire"/>
+  <rect x="1140" y="507" width="65" height="36" rx="5" class="comp"/>
+  <text x="1172" y="496" text-anchor="middle" class="small">(1−M)·25 kΩ</text>
+  <path d="M1140 525V590" class="wire"/>
+  <rect x="1110" y="625" width="60" height="55" rx="5" class="comp"/>
+  <text x="1180" y="657" class="small">M·25 kΩ</text>
+  <path d="M1140 590V625M1140 680V720" class="wire"/>
+
+  <text x="975" y="635" class="small">T, B, M are normalized controls clamped to 0.01…0.99</text>
+  <text x="45" y="790" class="sub">V2 and V3 each contribute grid-to-cathode and plate-to-cathode nonlinear ports. The 325 V source is U₂; capacitors become the three DK state variables.</text>
+</svg>

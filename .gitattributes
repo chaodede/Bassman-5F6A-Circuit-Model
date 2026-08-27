@@ -4,7 +4,9 @@
 *.h text eol=lf
 *.md text eol=lf
 *.yml text eol=lf
+*.svg text eol=lf
 *.txt text eol=lf
+*.png binary
 CMakeLists.txt text eol=lf
 LICENSE text eol=lf
 NOTICE text eol=lf
